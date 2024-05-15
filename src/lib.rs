@@ -1,6 +1,6 @@
 mod constants;
+mod handler;
 mod js_utils;
-mod pdb;
 
 use wasm_bindgen::prelude::*;
 
@@ -8,7 +8,7 @@ use wasm_bindgen::prelude::*;
 pub fn list_unknown_residues(bytes: js_sys::Uint8Array) -> JsValue {
     set_panic_hook();
     let structure = js_utils::load_pdb_from_bytes(bytes);
-    let unknown_res_map = pdb::identify_unknowns(structure);
+    let unknown_res_map = handler::identify_unknowns(structure);
     js_utils::hashmap_to_js_object(unknown_res_map)
 }
 
@@ -16,7 +16,7 @@ pub fn list_unknown_residues(bytes: js_sys::Uint8Array) -> JsValue {
 pub fn list_chains(bytes: js_sys::Uint8Array) -> JsValue {
     set_panic_hook();
     let structure = js_utils::load_pdb_from_bytes(bytes);
-    let chains = pdb::identify_chains(structure);
+    let chains = handler::identify_chains(structure);
     serde_wasm_bindgen::to_value(&chains).unwrap()
 }
 
@@ -24,7 +24,7 @@ pub fn list_chains(bytes: js_sys::Uint8Array) -> JsValue {
 pub fn guess_moltype(bytes: js_sys::Uint8Array) -> JsValue {
     set_panic_hook();
     let structure = js_utils::load_pdb_from_bytes(bytes);
-    let moltypes = pdb::identify_molecular_types(structure);
+    let moltypes = handler::identify_molecular_types(structure);
     js_utils::hashmap_to_js_object(moltypes)
 }
 
@@ -32,7 +32,7 @@ pub fn guess_moltype(bytes: js_sys::Uint8Array) -> JsValue {
 pub fn list_residues(bytes: js_sys::Uint8Array) -> JsValue {
     set_panic_hook();
     let structure = js_utils::load_pdb_from_bytes(bytes);
-    let residues = pdb::identify_residue_numbers(structure);
+    let residues = handler::identify_residue_numbers(structure);
     js_utils::hashmap_to_js_object(residues)
 }
 
@@ -40,7 +40,7 @@ pub fn list_residues(bytes: js_sys::Uint8Array) -> JsValue {
 pub fn chains_in_contact(bytes: js_sys::Uint8Array) -> JsValue {
     set_panic_hook();
     let structure = js_utils::load_pdb_from_bytes(bytes);
-    let contacts = pdb::chains_in_contact(structure);
+    let contacts = handler::chains_in_contact(structure);
     serde_wasm_bindgen::to_value(&contacts).unwrap()
 }
 
