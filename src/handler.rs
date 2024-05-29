@@ -1,8 +1,9 @@
 use crate::constants::{AMINOACIDS, DNA};
+use serde::Serialize;
 use std::collections::{HashMap, HashSet};
 use wasm_bindgen::JsValue;
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 pub enum MolecularType {
     Protein,
     Dna,
