@@ -17,12 +17,13 @@ where
     result.into()
 }
 
-pub fn load_pdb_from_bytes(bytes: js_sys::Uint8Array) -> pdbtbx::PDB {
-    let mut pdb_string: String = "".to_string();
-    if !bytes.is_null() {
+pub fn load_pdb_from_bytes(bytes: &js_sys::Uint8Array) -> pdbtbx::PDB {
+    let pdb_string = if bytes.is_null() {
+        String::new()
+    } else {
         let vec = bytes.to_vec();
-        pdb_string = String::from_utf8(vec).unwrap();
-    }
+        String::from_utf8(vec).unwrap()
+    };
 
     let bytes = pdb_string.as_bytes().to_vec();
     let cursor = Cursor::new(bytes);

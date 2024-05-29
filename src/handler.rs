@@ -10,33 +10,30 @@ pub enum MolecularType {
 }
 
 impl From<MolecularType> for JsValue {
-    fn from(val: MolecularType) -> JsValue {
+    fn from(val: MolecularType) -> Self {
         match val {
-            MolecularType::Protein => JsValue::from_str("protein"),
-            MolecularType::Dna => JsValue::from_str("dna"),
-            MolecularType::Other => JsValue::from_str("other"),
+            MolecularType::Protein => Self::from_str("protein"),
+            MolecularType::Dna => Self::from_str("dna"),
+            MolecularType::Other => Self::from_str("other"),
         }
     }
 }
 
-pub fn identify_molecular_types(structure: pdbtbx::PDB) -> HashMap<String, Vec<MolecularType>> {
+pub fn identify_molecular_types(structure: &pdbtbx::PDB) -> HashMap<String, Vec<MolecularType>> {
     let mut mol_types = HashMap::new();
 
     for chain in structure.chains() {
         let chain_id = chain.id().to_string();
-        let chain_mol_types: Vec<MolecularType> = chain
-            .residues()
-            .map(|res| {
-                let res_name = res.name().unwrap().to_uppercase();
-                if AMINOACIDS.contains(&res_name.as_str()) {
-                    MolecularType::Protein
-                } else if DNA.contains(&res_name.as_str()) {
-                    MolecularType::Dna
-                } else {
-                    MolecularType::Other
-                }
-            })
-            .collect();
+        let chain_mol_types = chain.residues().map(|res| {
+            let res_name = res.name().unwrap().to_uppercase();
+            if AMINOACIDS.contains(&res_name.as_str()) {
+                MolecularType::Protein
+            } else if DNA.contains(&res_name.as_str()) {
+                MolecularType::Dna
+            } else {
+                MolecularType::Other
+            }
+        });
 
         let unique_mol_types = chain_mol_types.into_iter().collect();
 
@@ -46,14 +43,14 @@ pub fn identify_molecular_types(structure: pdbtbx::PDB) -> HashMap<String, Vec<M
     mol_types
 }
 
-pub fn identify_chains(structure: pdbtbx::PDB) -> Vec<String> {
+pub fn identify_chains(structure: &pdbtbx::PDB) -> Vec<String> {
     structure
         .chains()
         .map(|chain| chain.id().to_string())
         .collect()
 }
 
-pub fn identify_residue_numbers(structure: pdbtbx::PDB) -> HashMap<String, Vec<String>> {
+pub fn identify_residue_numbers(structure: &pdbtbx::PDB) -> HashMap<String, Vec<String>> {
     structure
         .chains()
         .map(|chain| {
@@ -70,7 +67,7 @@ pub fn identify_residue_numbers(structure: pdbtbx::PDB) -> HashMap<String, Vec<S
         .collect()
 }
 
-pub fn identify_unknowns(structure: pdbtbx::PDB) -> HashMap<String, Vec<String>> {
+pub fn identify_unknowns(structure: &pdbtbx::PDB) -> HashMap<String, Vec<String>> {
     let mut res_map = HashMap::new();
 
     let known_residues: HashSet<_> = AMINOACIDS
@@ -97,7 +94,7 @@ pub fn identify_unknowns(structure: pdbtbx::PDB) -> HashMap<String, Vec<String>>
     res_map
 }
 
-pub fn chains_in_contact(structure: pdbtbx::PDB) -> Vec<(String, String)> {
+pub fn chains_in_contact(structure: &pdbtbx::PDB) -> Vec<(String, String)> {
     let mut contacts: HashSet<Vec<String>> = HashSet::new();
 
     for (chain_x, chain_y) in structure
@@ -151,7 +148,7 @@ mod tests {
     fn test_identify_chains() {
         let (pdb, _) =
             pdbtbx::open_pdb("test-data/1ppe.pdb", pdbtbx::StrictnessLevel::Loose).unwrap();
-        let chains = identify_chains(pdb);
+        let chains = identify_chains(&pdb);
         assert_eq!(chains, vec!["E", "I"]);
     }
 
@@ -160,7 +157,7 @@ mod tests {
         let (pdb, _) =
             pdbtbx::open_pdb("test-data/8kgk.pdb", pdbtbx::StrictnessLevel::Loose).unwrap();
 
-        let result = chains_in_contact(pdb);
+        let result = chains_in_contact(&pdb);
 
         assert_eq!(result.len(), 6);
 
@@ -175,7 +172,7 @@ mod tests {
         ];
 
         // Assert that the result contains all the expected pairs
-        for pair in expected_result.iter() {
+        for pair in &expected_result {
             // Change to a string
             let pair = (pair.0.to_string(), pair.1.to_string());
             assert!(result.contains(&pair));
