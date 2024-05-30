@@ -5,7 +5,7 @@ use std::collections::{HashMap, HashSet};
 
 mod constants;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum MolecularType {
     Protein,
     Dna,
@@ -22,6 +22,39 @@ impl From<MolecularType> for String {
     }
 }
 
+/// Identifies molecular types in the given PDB structure.
+///
+/// This function analyzes the chains and residues in a PDB structure to categorize each residue
+/// into molecular types such as Protein, DNA, or Other. It returns a `HashMap` where the keys
+/// are chain IDs and the values are vectors of unique `MolecularType`s present in each chain.
+///
+/// # Arguments
+///
+/// * `structure` - A reference to a `pdbtbx::PDB` structure representing the PDB file to be analyzed.
+///
+/// # Returns
+///
+/// A `HashMap<String, Vec<MolecularType>>` where each key is a chain ID and each value is a vector
+/// of unique `MolecularType`s found in that chain.
+///
+/// # Example
+///
+/// ```rust
+/// use pdbtbx::{PDB, StrictnessLevel};
+/// use pdb_handler::{identify_molecular_types, MolecularType};
+///
+/// let (mut pdb, _errors) = pdbtbx::open("example-pdbs/1crn.pdb", StrictnessLevel::Medium).unwrap();
+/// let mol_types = identify_molecular_types(&pdb);
+///
+/// for (chain_id, types) in mol_types {
+///     println!("Chain {}: {:?}", chain_id, types);
+/// }
+/// ```
+///
+/// # Panics
+///
+/// This function will panic if the residue name cannot be retrieved (`res.name().unwrap()`).
+///
 pub fn identify_molecular_types(structure: &pdbtbx::PDB) -> HashMap<String, Vec<MolecularType>> {
     let mut mol_types = HashMap::new();
 
@@ -46,6 +79,31 @@ pub fn identify_molecular_types(structure: &pdbtbx::PDB) -> HashMap<String, Vec<
     mol_types
 }
 
+/// Identifies all chain IDs in the given PDB structure.
+///
+/// This function iterates over all chains in a PDB structure and collects their IDs into a vector of strings.
+///
+/// # Arguments
+///
+/// * `structure` - A reference to a `pdbtbx::PDB` structure representing the PDB file to be analyzed.
+///
+/// # Returns
+///
+/// A `Vec<String>` containing the IDs of all chains present in the PDB structure.
+///
+/// # Example
+///
+/// ```rust
+/// use pdbtbx::{PDB, StrictnessLevel};
+/// use pdb_handler::identify_chains;
+///
+/// let (mut pdb, _errors) = pdbtbx::open("example-pdbs/1crn.pdb", StrictnessLevel::Medium).unwrap();
+/// let chains = identify_chains(&pdb);
+///
+/// for chain_id in chains {
+///     println!("Chain ID: {}", chain_id);
+/// }
+/// ```
 pub fn identify_chains(structure: &pdbtbx::PDB) -> Vec<String> {
     structure
         .chains()
@@ -53,11 +111,43 @@ pub fn identify_chains(structure: &pdbtbx::PDB) -> Vec<String> {
         .collect()
 }
 
+/// Identifies residue numbers in each chain of the given PDB structure.
+///
+/// This function iterates over all chains in a PDB structure, collects the residue numbers
+/// within each chain, and returns them in a `HashMap`. The keys in the `HashMap` are chain IDs,
+/// and the values are vectors of unique residue numbers represented as strings.
+///
+/// # Arguments
+///
+/// * `structure` - A reference to a `pdbtbx::PDB` structure representing the PDB file to be analyzed.
+///
+/// # Returns
+///
+/// A `HashMap<String, Vec<String>>` where each key is a chain ID and each value is a vector of unique
+/// residue numbers found in that chain.
+///
+/// # Example
+///
+/// ```rust
+/// use pdbtbx::{PDB, StrictnessLevel};
+/// use pdb_handler::identify_residue_numbers;
+///
+/// let (mut pdb, _errors) = pdbtbx::open("example-pdbs/1crn.pdb", StrictnessLevel::Medium).unwrap();
+/// let residue_numbers = identify_residue_numbers(&pdb);
+///
+/// for (chain_id, numbers) in residue_numbers {
+///     println!("Chain {}: {:?}", chain_id, numbers);
+/// }
+/// ```
+///
+/// # Panics
+///
+/// This function will panic if the residue serial number cannot be retrieved.
 pub fn identify_residue_numbers(structure: &pdbtbx::PDB) -> HashMap<String, Vec<String>> {
     structure
         .chains()
         .map(|chain| {
-            let resnumbers = chain
+            let resnumbers: Vec<String> = chain
                 .residues()
                 .map(|res| res.serial_number().to_string())
                 .collect::<Vec<_>>()
@@ -65,11 +155,46 @@ pub fn identify_residue_numbers(structure: &pdbtbx::PDB) -> HashMap<String, Vec<
                 .collect::<std::collections::HashSet<_>>()
                 .into_iter()
                 .collect();
+            // Sort the residue numbers
+            let mut resnumbers = resnumbers.into_iter().collect::<Vec<_>>();
+            resnumbers.sort();
             (chain.id().to_string(), resnumbers)
         })
         .collect()
 }
 
+/// Identifies unknown residues in each chain of the given PDB structure.
+///
+/// This function iterates over all chains in a PDB structure, filters out known residues (amino acids and DNA),
+/// and collects the names of unknown residues. It returns a `HashMap` where the keys are chain IDs and the
+/// values are vectors of unique unknown residue names.
+///
+/// # Arguments
+///
+/// * `structure` - A reference to a `pdbtbx::PDB` structure representing the PDB file to be analyzed.
+///
+/// # Returns
+///
+/// A `HashMap<String, Vec<String>>` where each key is a chain ID and each value is a vector of unique
+/// unknown residue names found in that chain.
+///
+/// # Example
+///
+/// ```rust
+/// use pdbtbx::{PDB, StrictnessLevel};
+/// use pdb_handler::identify_unknowns;
+///
+/// let (mut pdb, _errors) = pdbtbx::open("example-pdbs/1crn.pdb", StrictnessLevel::Medium).unwrap();
+/// let unknown_residues = identify_unknowns(&pdb);
+///
+/// for (chain_id, residues) in unknown_residues {
+///    println!("Chain {}: {:?}", chain_id, residues);
+/// }
+/// ```
+///
+/// # Panics
+///
+/// This function will panic if the residue name cannot be retrieved.
 pub fn identify_unknowns(structure: &pdbtbx::PDB) -> HashMap<String, Vec<String>> {
     let mut res_map = HashMap::new();
 
@@ -97,6 +222,38 @@ pub fn identify_unknowns(structure: &pdbtbx::PDB) -> HashMap<String, Vec<String>
     res_map
 }
 
+/// Identifies unknown residues in each chain of the given PDB structure.
+///
+/// This function iterates over all chains in a PDB structure, filters out known residues (amino acids and DNA),
+/// and collects the names of unknown residues. It returns a `HashMap` where the keys are chain IDs and the
+/// values are vectors of unique unknown residue names.
+///
+/// # Arguments
+///
+/// * `structure` - A reference to a `pdbtbx::PDB` structure representing the PDB file to be analyzed.
+///
+/// # Returns
+///
+/// A `HashMap<String, Vec<String>>` where each key is a chain ID and each value is a vector of unique
+/// unknown residue names found in that chain.
+///
+/// # Example
+///
+/// ```rust
+/// use pdbtbx::{PDB, StrictnessLevel};
+/// use pdb_handler::identify_unknowns;
+///
+/// let (mut pdb, _errors) = pdbtbx::open("example-pdbs/1crn.pdb", StrictnessLevel::Medium).unwrap();
+/// let unknown_residues = identify_unknowns(&pdb);
+///
+/// for (chain_id, residues) in unknown_residues {
+///     println!("Chain {}: {:?}", chain_id, residues);
+/// }
+/// ```
+///
+/// # Panics
+///
+/// This function will panic if the residue name cannot be retrieved.
 pub fn chains_in_contact(structure: &pdbtbx::PDB) -> Vec<(String, String)> {
     let mut contacts: HashSet<Vec<String>> = HashSet::new();
 
@@ -150,17 +307,20 @@ mod tests {
     use std::collections::HashMap;
 
     #[test]
-    fn test_identify_unknowns() {
+    fn test_identify_molecular_types() {
         // Load the structure from the test_data folder
         let (structure, _) =
             pdbtbx::open_pdb("test_data/prot_ligand.pdb", pdbtbx::StrictnessLevel::Loose).unwrap();
 
-        let unknowns = identify_unknowns(&structure);
+        let mol_types = identify_molecular_types(&structure);
 
         let mut expected = HashMap::new();
-        expected.insert("A".to_string(), vec!["I09".to_string()]);
+        expected.insert(
+            "A".to_string(),
+            vec![MolecularType::Protein, MolecularType::Other],
+        );
 
-        assert_eq!(unknowns, expected);
+        assert_eq!(mol_types, expected);
     }
 
     #[test]
@@ -175,5 +335,49 @@ mod tests {
             chains,
             vec!["A".to_string(), "B".to_string(), "C".to_string()]
         );
+    }
+
+    #[test]
+    fn test_identify_residue_numbers() {
+        // Load the structure from the test_data folder
+        let (structure, _) =
+            pdbtbx::open_pdb("test_data/prot_ligand.pdb", pdbtbx::StrictnessLevel::Loose).unwrap();
+
+        let residue_numbers = identify_residue_numbers(&structure);
+
+        let mut expected = HashMap::new();
+        expected.insert("A".to_string(), vec!["104".to_string(), "201".to_string()]);
+
+        assert_eq!(residue_numbers, expected);
+    }
+
+    #[test]
+    fn test_identify_unknowns() {
+        // Load the structure from the test_data folder
+        let (structure, _) =
+            pdbtbx::open_pdb("test_data/prot_ligand.pdb", pdbtbx::StrictnessLevel::Loose).unwrap();
+
+        let unknowns = identify_unknowns(&structure);
+
+        let mut expected = HashMap::new();
+        expected.insert("A".to_string(), vec!["I09".to_string()]);
+
+        assert_eq!(unknowns, expected);
+    }
+
+    #[test]
+    fn test_chains_in_contact() {
+        // Load the structure from the test_data folder
+        let (structure, _) = pdbtbx::open_pdb(
+            "test_data/chains_in_contact.pdb",
+            pdbtbx::StrictnessLevel::Loose,
+        )
+        .unwrap();
+
+        let contacts = chains_in_contact(&structure);
+
+        let expected = vec![("A".to_string(), "B".to_string())];
+
+        assert_eq!(contacts, expected);
     }
 }
