@@ -1,183 +1,141 @@
-// #![allow(clippy::all)]
-#![warn(clippy::correctness)]
-#![warn(clippy::suspicious)]
-#![warn(clippy::complexity)]
-#![warn(clippy::perf)]
-#![warn(clippy::style)]
-#![warn(clippy::pedantic)]
-#![warn(clippy::nursery)]
-// #![warn(clippy::cargo)]
-// #![deny(clippy::unwrap_used)]
-#![allow(clippy::must_use_candidate)]
+use crate::constants::{AMINOACIDS, DNA};
+use std::collections::{HashMap, HashSet};
+
 mod constants;
-mod handler;
-mod js_utils;
 
-use js_utils::load_pdb_from_bytes;
-
-use wasm_bindgen::prelude::*;
-
-#[wasm_bindgen(typescript_custom_section)]
-const TS_CUSTOM_SECTION: &'static str = r#"
-
-interface PDBErrorWrapper {
-    level: string;
-    short_description: string;
+pub enum MolecularType {
+    Protein,
+    Dna,
+    Other,
 }
 
-interface MolecularType {
-    Protein: string;
-    Dna: string;
-    Other: string;
-}
-
-export function valid_pdb(bytes: Uint8Array): any | PDBErrorWrapper;
-
-export function list_chains(bytes: Uint8Array): string[] | PDBErrorWrapper;
-
-export function chains_in_contact(bytes: Uint8Array): [string, string][] | PDBErrorWrapper;
-
-export function list_unknown_residues(bytes: Uint8Array): { [key: string]: string[] } | PDBErrorWrapper;
-
-export function list_residues(bytes: Uint8Array): { [key: string]: string[] } | PDBErrorWrapper;
-
-export function guess_moltype(bytes: Uint8Array): { [key: string]: MolecularType[] } | PDBErrorWrapper;
-
-"#;
-
-/// # Errors
-///
-/// If the input is not a valid PDB file, it will return an error message.
-///
-/// # Panics
-///
-/// If it cannot serialize the structure or if it cannot serialize the error
-/// message.
-///
-#[wasm_bindgen(skip_typescript)]
-pub fn valid_pdb(bytes: &js_sys::Uint8Array) -> Result<JsValue, JsValue> {
-    set_panic_hook();
-    match load_pdb_from_bytes(bytes) {
-        Ok(structure) => {
-            let js_value = serde_wasm_bindgen::to_value(&structure).unwrap();
-            Ok(js_value)
-        }
-        Err(e) => {
-            let js_value = serde_wasm_bindgen::to_value(&e).unwrap();
-            Err(js_value)
+impl From<MolecularType> for String {
+    fn from(val: MolecularType) -> Self {
+        match val {
+            MolecularType::Protein => "protein".to_string(),
+            MolecularType::Dna => "dna".to_string(),
+            MolecularType::Other => "other".to_string(),
         }
     }
 }
 
-/// # Panics
-/// If the input is not a valid PDB file or if it cannot serialize the error message.
-///
-/// # Errors
-/// If the input is not a valid PDB file, it will return an error message.
-#[wasm_bindgen(skip_typescript)]
-pub fn list_unknown_residues(bytes: &js_sys::Uint8Array) -> Result<JsValue, JsValue> {
-    set_panic_hook();
-    match load_pdb_from_bytes(bytes) {
-        Ok(structure) => {
-            let unknown_res_map = handler::identify_unknowns(&structure);
-            let js_value = serde_wasm_bindgen::to_value(&unknown_res_map).unwrap();
-            Ok(js_value)
-        }
-        Err(e) => {
-            let js_value = serde_wasm_bindgen::to_value(&e).unwrap();
-            Err(js_value)
-        }
+pub fn identify_molecular_types(structure: &pdbtbx::PDB) -> HashMap<String, Vec<MolecularType>> {
+    let mut mol_types = HashMap::new();
+
+    for chain in structure.chains() {
+        let chain_id = chain.id().to_string();
+        let chain_mol_types = chain.residues().map(|res| {
+            let res_name = res.name().unwrap().to_uppercase();
+            if AMINOACIDS.contains(&res_name.as_str()) {
+                MolecularType::Protein
+            } else if DNA.contains(&res_name.as_str()) {
+                MolecularType::Dna
+            } else {
+                MolecularType::Other
+            }
+        });
+
+        let unique_mol_types = chain_mol_types.into_iter().collect();
+
+        mol_types.insert(chain_id, unique_mol_types);
     }
+
+    mol_types
 }
 
-/// # Panics
-///
-/// If the input is not a valid PDB file or if it cannot serialize the chain vector.
-///
-/// # Errors
-///
-/// If the input is not a valid PDB file, it will return an error message.
-#[wasm_bindgen(skip_typescript)]
-pub fn list_chains(bytes: &js_sys::Uint8Array) -> Result<JsValue, JsValue> {
-    set_panic_hook();
-    match load_pdb_from_bytes(bytes) {
-        Ok(structure) => {
-            let chains = handler::identify_chains(&structure);
-            let js_value = serde_wasm_bindgen::to_value(&chains).unwrap();
-            Ok(js_value)
-        }
-        Err(e) => {
-            let js_value = serde_wasm_bindgen::to_value(&e).unwrap();
-            Err(js_value)
-        }
-    }
+pub fn identify_chains(structure: &pdbtbx::PDB) -> Vec<String> {
+    structure
+        .chains()
+        .map(|chain| chain.id().to_string())
+        .collect()
 }
 
-/// # Panics
-/// If the input is not a valid PDB file or if it cannot serialize the molecular types.
-/// # Errors
-/// If the input is not a valid PDB file, it will return an error message.
-pub fn guess_moltype(bytes: &js_sys::Uint8Array) -> Result<JsValue, JsValue> {
-    set_panic_hook();
-    match load_pdb_from_bytes(bytes) {
-        Ok(structure) => {
-            let mol_types = handler::identify_molecular_types(&structure);
-            let js_value = serde_wasm_bindgen::to_value(&mol_types).unwrap();
-            Ok(js_value)
-        }
-        Err(e) => {
-            let js_value = serde_wasm_bindgen::to_value(&e).unwrap();
-            Err(js_value)
-        }
-    }
+pub fn identify_residue_numbers(structure: &pdbtbx::PDB) -> HashMap<String, Vec<String>> {
+    structure
+        .chains()
+        .map(|chain| {
+            let resnumbers = chain
+                .residues()
+                .map(|res| res.serial_number().to_string())
+                .collect::<Vec<_>>()
+                .into_iter()
+                .collect::<std::collections::HashSet<_>>()
+                .into_iter()
+                .collect();
+            (chain.id().to_string(), resnumbers)
+        })
+        .collect()
 }
 
-/// # Panics
-/// If the input is not a valid PDB file or if it cannot serialize the residue numbers.
-///
-/// # Errors
-/// If the input is not a valid PDB file, it will return an error message.
-#[wasm_bindgen(skip_typescript)]
-pub fn list_residues(bytes: &js_sys::Uint8Array) -> Result<JsValue, JsValue> {
-    set_panic_hook();
-    match load_pdb_from_bytes(bytes) {
-        Ok(structure) => {
-            let residues = handler::identify_residue_numbers(&structure);
-            let js_value = serde_wasm_bindgen::to_value(&residues).unwrap();
-            Ok(js_value)
-        }
-        Err(e) => {
-            let js_value = serde_wasm_bindgen::to_value(&e).unwrap();
-            Err(js_value)
-        }
+pub fn identify_unknowns(structure: &pdbtbx::PDB) -> HashMap<String, Vec<String>> {
+    let mut res_map = HashMap::new();
+
+    let known_residues: HashSet<_> = AMINOACIDS
+        .iter()
+        .chain(DNA.iter())
+        .map(|s| s.to_uppercase())
+        .collect();
+
+    for chain in structure.chains() {
+        let chain_residues: Vec<_> = chain
+            .residues()
+            .filter(|res| !known_residues.contains(&res.name().unwrap().to_uppercase()))
+            .map(|res| res.name().unwrap().to_string())
+            .collect();
+
+        let mut chain_residues = chain_residues;
+
+        chain_residues.sort();
+        chain_residues.dedup();
+
+        res_map.insert(chain.id().to_string(), chain_residues);
     }
+
+    res_map
 }
 
-/// # Panics
-///
-/// This function will panic if the input is not a valid PDB file.
-///
-/// # Errors
-///
-/// This function will return an error message if the input is not a valid PDB file.
-#[wasm_bindgen(skip_typescript)]
-pub fn chains_in_contact(bytes: &js_sys::Uint8Array) -> Result<JsValue, JsValue> {
-    set_panic_hook();
-    match load_pdb_from_bytes(bytes) {
-        Ok(structure) => {
-            let contacts = handler::chains_in_contact(&structure);
-            let js_value = serde_wasm_bindgen::to_value(&contacts).unwrap();
-            Ok(js_value)
+pub fn chains_in_contact(structure: &pdbtbx::PDB) -> Vec<(String, String)> {
+    let mut contacts: HashSet<Vec<String>> = HashSet::new();
+
+    for (chain_x, chain_y) in structure
+        .chains()
+        .flat_map(|cx| structure.chains().map(move |cy| (cx, cy)))
+    {
+        if chain_x.id() == chain_y.id() {
+            continue;
         }
-        Err(e) => {
-            let js_value = serde_wasm_bindgen::to_value(&e).unwrap();
-            Err(js_value)
+
+        let mut in_contacts = false;
+        for contact in &contacts {
+            if contact.contains(&chain_x.id().to_string())
+                && contact.contains(&chain_y.id().to_string())
+            {
+                in_contacts = true;
+                break;
+            }
+        }
+
+        if in_contacts {
+            continue;
+        }
+
+        for res_x in chain_x.residues() {
+            for res_y in chain_y.residues() {
+                for atom_i in res_x.atoms() {
+                    for atom_j in res_y.atoms() {
+                        let dist = atom_i.distance(atom_j);
+                        if dist <= 5.0 {
+                            contacts
+                                .insert(vec![chain_x.id().to_string(), chain_y.id().to_string()]);
+                        }
+                    }
+                }
+            }
         }
     }
-}
 
-pub fn set_panic_hook() {
-    // See https://github.com/rustwasm/console_error_panic_hook#readme
-    #[cfg(feature = "console_error_panic_hook")]
-    console_error_panic_hook::set_once();
+    contacts
+        .into_iter()
+        .map(|pair| (pair[0].clone(), pair[1].clone()))
+        .collect()
 }

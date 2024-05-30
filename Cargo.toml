@@ -1,28 +1,16 @@
 [package]
 name = "pdb-handler"
-version = "0.0.2"
+version = "0.0.1"
 edition = "2021"
 license = "MIT"
-description = ""
+description = "Helpful functions to handle PDB files"
+keywords = ["pdb", "protein", "bioinformatics", "structure"]
+categories = ["science::bioinformatics", "science"]
+repository = "https://github.com/rvhonorato/pdb-handler"
+authors = ["Rodrigo V. Honorato <rvhonorato@protonmail.com>"]
+readme = "README.md"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[lib]
-crate-type = ["cdylib"]
-
-[features]
-default = ["console_error_panic_hook"]
 
 [dependencies]
-wasm-bindgen = "0.2"
-js-sys = "0.3"
 regex = "1.5"
-serde = { version = "1.0", features = ["derive"] }
-serde-wasm-bindgen = "0.6"
 pdbtbx = "0.11"
-console_error_panic_hook = { version = "0.1", optional = true }
-
-
-[profile.release]
-# Tell `rustc` to optimize for small code size.
-opt-level = "s"
