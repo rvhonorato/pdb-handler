@@ -1,8 +1,11 @@
 use crate::constants::{AMINOACIDS, DNA};
+use serde::{Deserialize, Serialize};
+
 use std::collections::{HashMap, HashSet};
 
 mod constants;
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum MolecularType {
     Protein,
     Dna,
@@ -138,4 +141,39 @@ pub fn chains_in_contact(structure: &pdbtbx::PDB) -> Vec<(String, String)> {
         .into_iter()
         .map(|pair| (pair[0].clone(), pair[1].clone()))
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    // use pdbtbx::{Atom, Chain, Residue, PDB};
+    use std::collections::HashMap;
+
+    #[test]
+    fn test_identify_unknowns() {
+        // Load the structure from the test_data folder
+        let (structure, _) =
+            pdbtbx::open_pdb("test_data/prot_ligand.pdb", pdbtbx::StrictnessLevel::Loose).unwrap();
+
+        let unknowns = identify_unknowns(&structure);
+
+        let mut expected = HashMap::new();
+        expected.insert("A".to_string(), vec!["I09".to_string()]);
+
+        assert_eq!(unknowns, expected);
+    }
+
+    #[test]
+    fn test_identify_chains() {
+        // Load the structure from the test_data folder
+        let (structure, _) =
+            pdbtbx::open_pdb("test_data/chains.pdb", pdbtbx::StrictnessLevel::Loose).unwrap();
+
+        let chains = identify_chains(&structure);
+
+        assert_eq!(
+            chains,
+            vec!["A".to_string(), "B".to_string(), "C".to_string()]
+        );
+    }
 }
