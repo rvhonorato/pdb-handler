@@ -1,6 +1,6 @@
 [package]
 name = "pdb-handler"
-version = "0.0.1"
+version = "0.1.0"
 edition = "2021"
 license = "MIT"
 description = "Helpful functions to handle PDB files"
