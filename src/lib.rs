@@ -1,5 +1,7 @@
 use crate::constants::{AMINOACIDS, DNA};
 use serde::{Deserialize, Serialize};
+use std::fs::File;
+use std::io::{BufRead, BufReader, Cursor};
 
 use std::collections::{HashMap, HashSet};
 
@@ -300,8 +302,60 @@ pub fn chains_in_contact(structure: &pdbtbx::PDB) -> Vec<(String, String)> {
         .collect()
 }
 
+/// Removes lines starting with "REMARK" from a PDB file and returns the filtered content as a BufReader.
+///
+/// This function reads a Protein Data Bank (PDB) file, filters out all lines that start with the keyword "REMARK",
+/// and returns the remaining content as a `BufReader` over an in-memory buffer. This allows for further processing
+/// of the filtered content without needing to write it to a temporary file.
+///
+/// # Arguments
+///
+/// * `pdb_f` - A string slice that holds the path to the input PDB file.
+///
+/// # Returns
+///
+/// * `BufReader<Cursor<Vec<u8>>>` - A `BufReader` containing the filtered content.
+///
+/// # Panics
+///
+/// This function will panic if the input file cannot be opened or read.
+///
+/// # Examples
+///
+/// ```
+/// use pdb_handler::remove_remark;
+/// use std::io::BufRead;
+/// let reader = remove_remark("example-pdbs/1crn.pdb");
+/// for line in reader.lines() {
+///     println!("{:?}", line.unwrap());
+/// }
+/// ```
+pub fn remove_remark(pdb_f: &str) -> BufReader<Cursor<Vec<u8>>> {
+    // Open the input file
+    let input_file = File::open(pdb_f).unwrap();
+    let reader = BufReader::new(input_file);
+
+    // Collect filtered lines into a vector
+    let filtered_content: Vec<u8> = reader
+        .lines()
+        .filter_map(|line| {
+            let line = line.unwrap();
+            if !line.starts_with("REMARK") {
+                Some(line + "\n")
+            } else {
+                None
+            }
+        })
+        .collect::<String>()
+        .into_bytes();
+
+    // Create a BufReader over an in-memory buffer
+    BufReader::new(Cursor::new(filtered_content))
+}
+
 #[cfg(test)]
 mod tests {
+
     use super::*;
     // use pdbtbx::{Atom, Chain, Residue, PDB};
     use std::collections::HashMap;
@@ -379,5 +433,16 @@ mod tests {
         let expected = vec![("A".to_string(), "B".to_string())];
 
         assert_eq!(contacts, expected);
+    }
+
+    #[test]
+    fn test_remove_remarks() {
+        let input_pdb = "test_data/pdb_w_remark.pdb";
+        let reader = remove_remark(input_pdb);
+
+        // Collect the lines from the reader and check if the REMARK lines are removed
+        let lines: Vec<String> = reader.lines().map(|line| line.unwrap()).collect();
+
+        assert!(!lines.iter().any(|line| line.starts_with("REMARK")));
     }
 }
