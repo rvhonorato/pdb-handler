@@ -353,6 +353,60 @@ pub fn remove_remark(pdb_f: &str) -> BufReader<Cursor<Vec<u8>>> {
     BufReader::new(Cursor::new(filtered_content))
 }
 
+/// Reads a text file specified by `pdb_f`, pads each line to 80 characters
+/// with spaces, and returns a buffered reader over an in-memory buffer
+/// containing the padded content.
+///
+/// # Arguments
+///
+/// * `pdb_f` - A string slice that holds the path to the input text file.
+///
+/// # Returns
+///
+/// A `BufReader` wrapped around a `Cursor<Vec<u8>>>`, where each line from
+/// the input file is padded to 80 characters with spaces and newline character.
+///
+/// # Panics
+///
+/// This function panics if it encounters any I/O errors while reading or
+/// processing the file.
+///
+/// # Examples
+///
+/// ```rust
+/// use pdb_handler::pad_lines;
+/// use std::io::Read;
+/// use std::io::BufReader;
+///
+/// let mut padded_reader = pad_lines("example-pdbs/dna.pdb");
+/// let mut buffer = String::new();
+/// padded_reader.read_to_string(&mut buffer).unwrap();
+/// println!("Padded content:\n{}", buffer);
+/// ```
+///
+/// This example reads lines from "input.txt", pads each line with spaces
+/// to reach 80 characters, and then prints out the padded content.
+pub fn pad_lines(pdb_f: &str) -> BufReader<Cursor<Vec<u8>>> {
+    // Open the input file
+    let input_file = File::open(pdb_f).unwrap();
+    let reader = BufReader::new(input_file);
+
+    // Collect filtered lines into a vector
+    let filtered_content: Vec<u8> = reader
+        .lines()
+        .flat_map(|line| {
+            let line = line.unwrap();
+            let mut padded_line = line.to_string();
+            padded_line.push_str(" ".repeat(80 - line.len()).as_str());
+            padded_line.push('\n'); // Append newline
+            padded_line.into_bytes()
+        })
+        .collect();
+
+    // Create a BufReader over an in-memory buffer
+    BufReader::new(Cursor::new(filtered_content))
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -444,5 +498,16 @@ mod tests {
         let lines: Vec<String> = reader.lines().map(|line| line.unwrap()).collect();
 
         assert!(!lines.iter().any(|line| line.starts_with("REMARK")));
+    }
+
+    #[test]
+    fn test_pad_lines() {
+        let input_pdb = "test_data/pdb_w_short_lines.pdb";
+
+        let reader = pad_lines(input_pdb);
+
+        let lines: Vec<String> = reader.lines().map(|line| line.unwrap()).collect();
+
+        assert!(lines.iter().all(|line| line.len() == 80));
     }
 }
