@@ -353,7 +353,7 @@ pub fn remove_remark(pdb_f: &str) -> BufReader<Cursor<Vec<u8>>> {
     BufReader::new(Cursor::new(filtered_content))
 }
 
-/// Reads a text file specified by `pdb_f`, pads each line to 80 characters
+/// Reads a text file specified by `pdb_f`, pads each line that starts with `ATOM` to 80 characters
 /// with spaces, and returns a buffered reader over an in-memory buffer
 /// containing the padded content.
 ///
@@ -384,7 +384,7 @@ pub fn remove_remark(pdb_f: &str) -> BufReader<Cursor<Vec<u8>>> {
 /// println!("Padded content:\n{}", buffer);
 /// ```
 ///
-/// This example reads lines from "input.txt", pads each line with spaces
+/// This example reads lines from "dna.pdb", pads each line that starts with `ATOM` with spaces
 /// to reach 80 characters, and then prints out the padded content.
 pub fn pad_lines(pdb_f: &str) -> BufReader<Cursor<Vec<u8>>> {
     // Open the input file
@@ -396,10 +396,15 @@ pub fn pad_lines(pdb_f: &str) -> BufReader<Cursor<Vec<u8>>> {
         .lines()
         .flat_map(|line| {
             let line = line.unwrap();
-            let mut padded_line = line.to_string();
-            padded_line.push_str(" ".repeat(80 - line.len()).as_str());
-            padded_line.push('\n'); // Append newline
-            padded_line.into_bytes()
+            let mut processed_line = if line.starts_with("ATOM") {
+                let mut padded_line = line.to_string();
+                padded_line.push_str(" ".repeat(80 - line.len()).as_str());
+                padded_line
+            } else {
+                line
+            };
+            processed_line.push('\n'); // Append newline
+            processed_line.into_bytes()
         })
         .collect();
 
@@ -501,13 +506,16 @@ mod tests {
     }
 
     #[test]
-    fn test_pad_lines() {
+    fn test_pad_short_lines() {
         let input_pdb = "test_data/pdb_w_short_lines.pdb";
 
         let reader = pad_lines(input_pdb);
 
         let lines: Vec<String> = reader.lines().map(|line| line.unwrap()).collect();
 
-        assert!(lines.iter().all(|line| line.len() == 80));
+        assert!(lines
+            .iter()
+            .filter(|line| line.starts_with("ATOM"))
+            .all(|line| line.len() == 80));
     }
 }
