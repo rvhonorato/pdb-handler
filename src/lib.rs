@@ -398,8 +398,12 @@ pub fn pad_lines(pdb_f: &str) -> BufReader<Cursor<Vec<u8>>> {
             let line = line.unwrap();
             let mut processed_line = if line.starts_with("ATOM") {
                 let mut padded_line = line.to_string();
-                padded_line.push_str(" ".repeat(80 - line.len()).as_str());
-                padded_line
+                if line.len() <= 80 {
+                    padded_line.push_str(" ".repeat(80 - line.len()).as_str());
+                    padded_line
+                } else {
+                    line[..80].to_string()
+                }
             } else {
                 line
             };
@@ -508,6 +512,19 @@ mod tests {
     #[test]
     fn test_pad_short_lines() {
         let input_pdb = "test_data/pdb_w_short_lines.pdb";
+
+        let reader = pad_lines(input_pdb);
+
+        let lines: Vec<String> = reader.lines().map(|line| line.unwrap()).collect();
+
+        assert!(lines
+            .iter()
+            .filter(|line| line.starts_with("ATOM"))
+            .all(|line| line.len() == 80));
+    }
+    #[test]
+    fn test_pad_long_lines() {
+        let input_pdb = "test_data/pdb_w_long_lines.pdb";
 
         let reader = pad_lines(input_pdb);
 
