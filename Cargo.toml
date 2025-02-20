@@ -12,6 +12,6 @@ readme = "README.md"
 
 
 [dependencies]
-regex = "1.5"
+regex = "1.11"
 pdbtbx = "0.12"
-serde = { version = "1.0", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
