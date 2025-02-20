@@ -42,10 +42,10 @@ impl From<MolecularType> for String {
 /// # Example
 ///
 /// ```rust
-/// use pdbtbx::{PDB, StrictnessLevel};
+/// use pdbtbx::PDB;
 /// use pdb_handler::{identify_molecular_types, MolecularType};
 ///
-/// let (mut pdb, _errors) = pdbtbx::open("example-pdbs/1crn.pdb", StrictnessLevel::Medium).unwrap();
+/// let (mut pdb, _errors) = pdbtbx::open("example-pdbs/1crn.pdb").unwrap();
 /// let mol_types = identify_molecular_types(&pdb);
 ///
 /// for (chain_id, types) in mol_types {
@@ -96,10 +96,10 @@ pub fn identify_molecular_types(structure: &pdbtbx::PDB) -> HashMap<String, Vec<
 /// # Example
 ///
 /// ```rust
-/// use pdbtbx::{PDB, StrictnessLevel};
+/// use pdbtbx::PDB;
 /// use pdb_handler::identify_chains;
 ///
-/// let (mut pdb, _errors) = pdbtbx::open("example-pdbs/1crn.pdb", StrictnessLevel::Medium).unwrap();
+/// let (mut pdb, _errors) = pdbtbx::open("example-pdbs/1crn.pdb").unwrap();
 /// let chains = identify_chains(&pdb);
 ///
 /// for chain_id in chains {
@@ -131,10 +131,10 @@ pub fn identify_chains(structure: &pdbtbx::PDB) -> Vec<String> {
 /// # Example
 ///
 /// ```rust
-/// use pdbtbx::{PDB, StrictnessLevel};
+/// use pdbtbx::PDB;
 /// use pdb_handler::identify_residue_numbers;
 ///
-/// let (mut pdb, _errors) = pdbtbx::open("example-pdbs/1crn.pdb", StrictnessLevel::Medium).unwrap();
+/// let (mut pdb, _errors) = pdbtbx::open("example-pdbs/1crn.pdb").unwrap();
 /// let residue_numbers = identify_residue_numbers(&pdb);
 ///
 /// for (chain_id, numbers) in residue_numbers {
@@ -183,10 +183,10 @@ pub fn identify_residue_numbers(structure: &pdbtbx::PDB) -> HashMap<String, Vec<
 /// # Example
 ///
 /// ```rust
-/// use pdbtbx::{PDB, StrictnessLevel};
+/// use pdbtbx::PDB;
 /// use pdb_handler::identify_unknowns;
 ///
-/// let (mut pdb, _errors) = pdbtbx::open("example-pdbs/1crn.pdb", StrictnessLevel::Medium).unwrap();
+/// let (mut pdb, _errors) = pdbtbx::open("example-pdbs/1crn.pdb").unwrap();
 /// let unknown_residues = identify_unknowns(&pdb);
 ///
 /// for (chain_id, residues) in unknown_residues {
@@ -242,10 +242,10 @@ pub fn identify_unknowns(structure: &pdbtbx::PDB) -> HashMap<String, Vec<String>
 /// # Example
 ///
 /// ```rust
-/// use pdbtbx::{PDB, StrictnessLevel};
+/// use pdbtbx::PDB;
 /// use pdb_handler::identify_unknowns;
 ///
-/// let (mut pdb, _errors) = pdbtbx::open("example-pdbs/1crn.pdb", StrictnessLevel::Medium).unwrap();
+/// let (mut pdb, _errors) = pdbtbx::open("example-pdbs/1crn.pdb").unwrap();
 /// let unknown_residues = identify_unknowns(&pdb);
 ///
 /// for (chain_id, residues) in unknown_residues {
@@ -419,6 +419,8 @@ pub fn pad_lines(pdb_f: &str) -> BufReader<Cursor<Vec<u8>>> {
 #[cfg(test)]
 mod tests {
 
+    use pdbtbx::ReadOptions;
+
     use super::*;
     // use pdbtbx::{Atom, Chain, Residue, PDB};
     use std::collections::HashMap;
@@ -426,8 +428,10 @@ mod tests {
     #[test]
     fn test_identify_molecular_types() {
         // Load the structure from the test_data folder
-        let (structure, _) =
-            pdbtbx::open_pdb("test_data/prot_ligand.pdb", pdbtbx::StrictnessLevel::Loose).unwrap();
+        let (structure, _) = ReadOptions::default()
+            .set_format(pdbtbx::Format::Pdb)
+            .read("test_data/prot_ligand.pdb")
+            .unwrap();
 
         let mol_types = identify_molecular_types(&structure);
 
@@ -443,8 +447,10 @@ mod tests {
     #[test]
     fn test_identify_chains() {
         // Load the structure from the test_data folder
-        let (structure, _) =
-            pdbtbx::open_pdb("test_data/chains.pdb", pdbtbx::StrictnessLevel::Loose).unwrap();
+        let (structure, _) = ReadOptions::default()
+            .set_format(pdbtbx::Format::Pdb)
+            .read("test_data/chains.pdb")
+            .unwrap();
 
         let chains = identify_chains(&structure);
 
@@ -457,8 +463,10 @@ mod tests {
     #[test]
     fn test_identify_residue_numbers() {
         // Load the structure from the test_data folder
-        let (structure, _) =
-            pdbtbx::open_pdb("test_data/prot_ligand.pdb", pdbtbx::StrictnessLevel::Loose).unwrap();
+        let (structure, _) = ReadOptions::default()
+            .set_format(pdbtbx::Format::Pdb)
+            .read("test_data/prot_ligand.pdb")
+            .unwrap();
 
         let residue_numbers = identify_residue_numbers(&structure);
 
@@ -471,8 +479,10 @@ mod tests {
     #[test]
     fn test_identify_unknowns() {
         // Load the structure from the test_data folder
-        let (structure, _) =
-            pdbtbx::open_pdb("test_data/prot_ligand.pdb", pdbtbx::StrictnessLevel::Loose).unwrap();
+        let (structure, _) = ReadOptions::default()
+            .set_format(pdbtbx::Format::Pdb)
+            .read("test_data/prot_ligand.pdb")
+            .unwrap();
 
         let unknowns = identify_unknowns(&structure);
 
@@ -485,11 +495,10 @@ mod tests {
     #[test]
     fn test_chains_in_contact() {
         // Load the structure from the test_data folder
-        let (structure, _) = pdbtbx::open_pdb(
-            "test_data/chains_in_contact.pdb",
-            pdbtbx::StrictnessLevel::Loose,
-        )
-        .unwrap();
+        let (structure, _) = ReadOptions::default()
+            .set_format(pdbtbx::Format::Pdb)
+            .read("test_data/chains_in_contact.pdb")
+            .unwrap();
 
         let contacts = chains_in_contact(&structure);
 

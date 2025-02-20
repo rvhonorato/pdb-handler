@@ -1,6 +1,6 @@
 [package]
 name = "pdb-handler"
-version = "0.1.2"
+version = "0.2.0"
 edition = "2021"
 license = "MIT"
 description = "Helpful functions to handle PDB files"
@@ -13,5 +13,5 @@ readme = "README.md"
 
 [dependencies]
 regex = "1.5"
-pdbtbx = "0.11"
+pdbtbx = "0.12"
 serde = { version = "1.0", features = ["derive"] }
