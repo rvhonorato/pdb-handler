@@ -224,11 +224,11 @@ pub fn identify_unknowns(structure: &pdbtbx::PDB) -> HashMap<String, Vec<String>
     res_map
 }
 
-/// Identifies unknown residues in each chain of the given PDB structure.
+/// Identifies pairs of chains that are in close contact within the given PDB structure.
 ///
-/// This function iterates over all chains in a PDB structure, filters out known residues (amino acids and DNA),
-/// and collects the names of unknown residues. It returns a `HashMap` where the keys are chain IDs and the
-/// values are vectors of unique unknown residue names.
+/// This function analyzes inter-chain interactions by checking for atoms from different chains
+/// that are within a specified distance threshold (5.0 Å). It returns a list of unique chain pairs
+/// where at least one pair of atoms from each chain is within the contact distance.
 ///
 /// # Arguments
 ///
@@ -236,26 +236,28 @@ pub fn identify_unknowns(structure: &pdbtbx::PDB) -> HashMap<String, Vec<String>
 ///
 /// # Returns
 ///
-/// A `HashMap<String, Vec<String>>` where each key is a chain ID and each value is a vector of unique
-/// unknown residue names found in that chain.
+/// A `Vec<(String, String)>` where each tuple represents a pair of chain IDs that are in contact.
+/// The pairs are unordered and unique (e.g., if (A, B) is present, (B, A) will not be included).
 ///
 /// # Example
 ///
 /// ```rust
 /// use pdbtbx::PDB;
-/// use pdb_handler::identify_unknowns;
+/// use pdb_handler::chains_in_contact;
 ///
 /// let (mut pdb, _errors) = pdbtbx::open("example-pdbs/1crn.pdb").unwrap();
-/// let unknown_residues = identify_unknowns(&pdb);
+/// let contacting_chains = chains_in_contact(&pdb);
 ///
-/// for (chain_id, residues) in unknown_residues {
-///     println!("Chain {}: {:?}", chain_id, residues);
+/// for (chain_a, chain_b) in contacting_chains {
+///     println!("Chains {} and {} are in contact", chain_a, chain_b);
 /// }
 /// ```
 ///
-/// # Panics
+/// # Notes
 ///
-/// This function will panic if the residue name cannot be retrieved.
+/// - The contact distance threshold is fixed at 5.0 Å.
+/// - Self-contacts (within the same chain) are ignored.
+/// - The function uses a HashSet internally to ensure unique pairings.
 pub fn chains_in_contact(structure: &pdbtbx::PDB) -> Vec<(String, String)> {
     let mut contacts: HashSet<Vec<String>> = HashSet::new();
 
