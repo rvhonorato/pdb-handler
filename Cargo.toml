@@ -10,6 +10,9 @@ repository = "https://github.com/rvhonorato/pdb-handler"
 authors = ["Rodrigo V. Honorato <rvhonorato@protonmail.com>"]
 readme = "README.md"
 
+[lib]
+name = "pdb_handler"
+path = "src/lib.rs"
 
 [dependencies]
 regex = "1.11"
