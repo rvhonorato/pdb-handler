@@ -21,15 +21,14 @@ export const App = () => {
       <Title />
       <Introduction />
       <Links />
+      {showDemo && <Demo />}
       <button
         onClick={() => setShowDemo(!showDemo)}
-        className="cursor-not-allowed mx-auto mb-8 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center"
-        disabled
+        className="mx-auto mt-8 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center"
       >
         <span className="mr-2">🚀</span>
         {showDemo ? "Hide Demo" : "Try It Now!"}
       </button>
-      {showDemo && <Demo />}
       <Motivation />
       <Pitch />
       <HowToRust />
