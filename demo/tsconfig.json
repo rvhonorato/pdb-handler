@@ -4,5 +4,7 @@
     { "path": "./tsconfig.app.json" },
     { "path": "./tsconfig.node.json" }
   ],
-  "typeRoots": ["../pkg"]
+  "compilerOptions": {
+    "typeRoots": ["../pkg"]
+  }
 }
