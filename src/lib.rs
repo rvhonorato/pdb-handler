@@ -7,7 +7,7 @@ use std::collections::{HashMap, HashSet};
 
 mod constants;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum MolecularType {
     Protein,
     Dna,
@@ -73,9 +73,12 @@ pub fn identify_molecular_types(structure: &pdbtbx::PDB) -> HashMap<String, Vec<
             }
         });
 
-        let unique_mol_types = chain_mol_types.into_iter().collect();
+        let mut unique_mol_types = HashSet::new();
+        for mol_type in chain_mol_types {
+            unique_mol_types.insert(mol_type);
+        }
 
-        mol_types.insert(chain_id, unique_mol_types);
+        mol_types.insert(chain_id, unique_mol_types.into_iter().collect());
     }
 
     mol_types
