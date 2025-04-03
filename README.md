@@ -11,8 +11,6 @@ A library to handle PDB files, [check the docs](https://docs.rs/pdb-handler).
 
 ## Web Assembly demo
 
-- Install `wasm-pack`
-
 ```text
 # install wasm-pack
 curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
