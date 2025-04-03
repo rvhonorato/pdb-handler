@@ -8,3 +8,19 @@
 ![Crates.io Total Downloads](https://img.shields.io/crates/d/pdb-handler)
 
 A library to handle PDB files, [check the docs](https://docs.rs/pdb-handler).
+
+## Web Assembly demo
+
+- Install `wasm-pack`
+
+```text
+# install wasm-pack
+curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+# install dependencies
+cd demo/
+npm i
+
+# run
+npm run dev
+```
