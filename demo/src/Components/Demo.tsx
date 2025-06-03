@@ -1,5 +1,6 @@
 import { useState, useEffect, ReactElement } from "react";
-import { PdbHandlerApi, default as init } from "pdb-handler-wasm";
+// import { PdbHandlerApi, default as init } from "pdb-handler-wasm";
+import init, { PdbHandlerApi } from "pdb-handler-wasm";
 
 export const Demo = () => {
   const [wasmApi, setWasmApi] = useState<PdbHandlerApi | undefined>();
@@ -11,8 +12,7 @@ export const Demo = () => {
   async function loadWasm() {
     try {
       await init(); // initialize the WASM module
-      const api = new PdbHandlerApi(); // create an instance of the the pdb handler api
-      setWasmApi(api); // set the api in state
+      setWasmApi(new PdbHandlerApi());
       setLoading(false);
     } catch (error) {
       console.error("Failed to initialize WASM:", error);
