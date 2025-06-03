@@ -16,6 +16,7 @@ const packageJson = {
   name: PACKAGE_NAME,
   version: getPackageVersion(),
   module: `${PACKAGE_NAME.replace(/-/g, "_")}.js`,
+  types: `${PACKAGE_NAME.replace(/-/g, "_")}.d.ts`,
   type: "module",
   files: getOutputFiles(),
   sideEffects: false,
