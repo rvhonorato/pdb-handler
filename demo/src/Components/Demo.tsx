@@ -1,5 +1,4 @@
 import { useState, useEffect, ReactElement } from "react";
-// import { PdbHandlerApi, default as init } from "pdb-handler-wasm";
 import init, { PdbHandlerApi } from "pdb-handler-wasm";
 
 export const Demo = () => {
