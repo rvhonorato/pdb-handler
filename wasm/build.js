@@ -29,6 +29,9 @@ fs.writeFileSync(
 // Add TypeScript declarations
 addTypeDeclarations();
 
+// Add README
+copyReadme();
+
 console.log("✅ Build completed successfully!");
 console.log("To publish to NPM:");
 console.log(`   cd ${PKG_DIR}`);
@@ -38,15 +41,48 @@ console.log("   npm publish");
 
 // Make sure the NPM package version matches the `wasm` version
 function getPackageVersion() {
+  const cargoTomlPath = path.join(__dirname, "Cargo.toml");
+
+  if (!fs.existsSync(cargoTomlPath)) {
+    throw new Error(`Cargo.toml not found at ${cargoTomlPath}`);
+  }
+
+  let cargoToml;
   try {
-    const cargoToml = fs.readFileSync(
-      path.join(__dirname, "Cargo.toml"),
-      "utf8",
-    );
-    const versionMatch = cargoToml.match(/version\s*=\s*"([\d.]+)"/);
-    return versionMatch ? versionMatch[1] : "0.1.0";
-  } catch (e) {
-    return "0.1.0";
+    cargoToml = fs.readFileSync(cargoTomlPath, "utf8");
+  } catch (error) {
+    throw new Error(`Failed to read Cargo.toml: ${error.message}`);
+  }
+
+  const versionMatch = cargoToml.match(/^\s*version\s*=\s*"([^"]+)"\s*$/m);
+
+  if (!versionMatch) {
+    throw new Error("Version field not found in Cargo.toml");
+  }
+
+  const version = versionMatch[1];
+
+  // Validate that it's a proper semantic version
+  if (
+    !/^\d+\.\d+\.\d+(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$/.test(
+      version,
+    )
+  ) {
+    throw new Error(`Invalid version format in Cargo.toml: "${version}"`);
+  }
+
+  return version;
+}
+
+function copyReadme() {
+  const readmePath = path.join(__dirname, "README.md");
+  const targetPath = path.join(PKG_DIR, "README.md");
+
+  if (fs.existsSync(readmePath)) {
+    fs.copyFileSync(readmePath, targetPath);
+    console.log("📄 Copied README.md to package");
+  } else {
+    console.warn("⚠️  No README.md found in project root");
   }
 }
 
@@ -57,7 +93,8 @@ function getOutputFiles() {
       (file) =>
         file.endsWith(".wasm") ||
         file.endsWith(".js") ||
-        file.endsWith(".d.ts"),
+        file.endsWith(".d.ts") ||
+        file == "README.md",
     )
     .map((file) => {
       // Rename files to use package name
