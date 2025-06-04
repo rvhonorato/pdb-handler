@@ -27,12 +27,6 @@ fs.writeFileSync(
   JSON.stringify(packageJson, null, 2),
 );
 
-// Add TypeScript declarations
-addTypeDeclarations();
-
-// Add README
-copyReadme();
-
 console.log("✅ Build completed successfully!");
 console.log("To publish to NPM:");
 console.log(`   cd ${PKG_DIR}`);
@@ -75,18 +69,6 @@ function getPackageVersion() {
   return version;
 }
 
-function copyReadme() {
-  const readmePath = path.join(__dirname, "README.md");
-  const targetPath = path.join(PKG_DIR, "README.md");
-
-  if (fs.existsSync(readmePath)) {
-    fs.copyFileSync(readmePath, targetPath);
-    console.log("📄 Copied README.md to package");
-  } else {
-    console.warn("⚠️  No README.md found in project root");
-  }
-}
-
 function getOutputFiles() {
   return fs
     .readdirSync(PKG_DIR)
@@ -109,23 +91,4 @@ function getOutputFiles() {
       }
       return file;
     });
-}
-
-// TODO: Find a smarter way to add the type declarations
-function addTypeDeclarations() {
-  const dtsContent = `declare module "${PACKAGE_NAME}" {
-  export function init(): Promise<void>;
-  export class PdbHandlerApi {
-    list_chains(data: Uint8Array): string[];
-    list_unknown_residues(data: Uint8Array): Map<string, string[]>;
-    guess_moltype(data: Uint8Array): Map<string, string[]>;
-    list_residues(data: Uint8Array): Map<string, string[]>;
-    chains_in_contact(data: Uint8Array): string[][];
-  }
-}`;
-
-  const dtsPath = path.join(PKG_DIR, `${PACKAGE_NAME.replace(/-/g, "_")}.d.ts`);
-  if (!fs.existsSync(dtsPath)) {
-    fs.writeFileSync(dtsPath, dtsContent);
-  }
 }
