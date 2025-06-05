@@ -6,14 +6,12 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineConfig({
   base: "/pdb-handler/",
   plugins: [react(), tailwindcss()],
-  server: {
-    fs: {
-      // Specify `/pkg` here so we can load the types
-      allow: ["..", "../../pkg"],
-    },
-  },
+  server: {},
   build: {
     outDir: "../dist",
     emptyOutDir: true,
+  },
+  optimizeDeps: {
+    exclude: ["pdb-handler-wasm"],
   },
 });
