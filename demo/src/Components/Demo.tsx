@@ -1,5 +1,5 @@
 import { useState, useEffect, ReactElement } from "react";
-import init, { PdbHandlerApi } from "pdb-handler-wasm";
+import init, { ChainContact, ChainData, PdbHandlerApi } from "pdb-handler-wasm";
 
 export const Demo = () => {
   const [wasmApi, setWasmApi] = useState<PdbHandlerApi | undefined>();
@@ -77,10 +77,10 @@ export const Demo = () => {
 
   const formatOutput = (
     chainResult: string[],
-    unknownresResult: Map<string, string[]>,
-    moltypeResult: Map<string, string[]>,
-    listresidueResult: Map<string, string[]>,
-    chainincontactResult: string[][],
+    unknownresResult: ChainData[],
+    moltypeResult: ChainData[],
+    listresidueResult: ChainData[],
+    chainincontactResult: ChainContact[],
   ) => {
     return (
       <div className="max-w-2xl mx-auto space-y-8 bg-white p-6 rounded-lg shadow-md">
@@ -92,7 +92,7 @@ export const Demo = () => {
           <ul className="list-disc list-inside space-y-2 text-gray-700">
             {chainResult.map((chain, index) => (
               <li
-                key={index}
+                key={`chains_${index}`}
                 className="pl-2 hover:bg-blue-50 rounded px-2 py-1"
               >
                 <span className="font-mono bg-blue-100 px-2 rounded text-blue-800">
@@ -109,16 +109,19 @@ export const Demo = () => {
             Unknown Residues
           </h3>
           <ul className="space-y-3">
-            {Array.from(unknownresResult.entries()).map(
-              ([chain, residues], index) => (
-                <li key={index} className="bg-amber-50 p-3 rounded-lg">
-                  <span className="font-medium text-amber-800">{chain}:</span>
-                  <span className="ml-2 text-amber-700">
-                    {residues.join(", ")}
-                  </span>
-                </li>
-              ),
-            )}
+            {Array.from(unknownresResult).map((data, index) => (
+              <li
+                key={`unknownres_${index}`}
+                className="bg-amber-50 p-3 rounded-lg"
+              >
+                <span className="font-medium text-amber-800">
+                  {data.chain}:
+                </span>
+                <span className="ml-2 text-amber-700">
+                  {data.items.join(", ")}
+                </span>
+              </li>
+            ))}
           </ul>
         </div>
 
@@ -128,16 +131,19 @@ export const Demo = () => {
             Molecular Types
           </h3>
           <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {Array.from(moltypeResult.entries()).map(
-              ([chain, types], index) => (
-                <li key={index} className="bg-emerald-50 p-3 rounded-lg">
-                  <span className="font-medium text-emerald-800">{chain}:</span>
-                  <span className="ml-2 text-emerald-700">
-                    {types.join(", ")}
-                  </span>
-                </li>
-              ),
-            )}
+            {Array.from(moltypeResult).map((data, index) => (
+              <li
+                key={`moltype_${index}`}
+                className="bg-emerald-50 p-3 rounded-lg"
+              >
+                <span className="font-medium text-emerald-800">
+                  {data.chain}:
+                </span>
+                <span className="ml-2 text-emerald-700">
+                  {data.items.join(", ")}
+                </span>
+              </li>
+            ))}
           </ul>
         </div>
 
@@ -147,16 +153,19 @@ export const Demo = () => {
             Residues
           </h3>
           <ul className="space-y-3">
-            {Array.from(listresidueResult.entries()).map(
-              ([chain, residues], index) => (
-                <li key={index} className="bg-purple-50 p-3 rounded-lg">
-                  <span className="font-medium text-purple-800">{chain}:</span>
-                  <span className="ml-2 text-purple-700">
-                    {residues.join(", ")}
-                  </span>
-                </li>
-              ),
-            )}
+            {Array.from(listresidueResult).map((data, index) => (
+              <li
+                key={`residues_${index}`}
+                className="bg-purple-50 p-3 rounded-lg"
+              >
+                <span className="font-medium text-purple-800">
+                  {data.chain}:
+                </span>
+                <span className="ml-2 text-purple-700">
+                  {data.items.join(", ")}
+                </span>
+              </li>
+            ))}
           </ul>
         </div>
 
@@ -168,10 +177,10 @@ export const Demo = () => {
           <ul className="flex flex-wrap gap-2">
             {chainincontactResult.map((contact, index) => (
               <li
-                key={index}
+                key={`chainsincontact_${index}`}
                 className="bg-rose-100 px-3 py-1 rounded-full text-rose-800 text-sm font-medium"
               >
-                {contact.join(" ↔ ")}
+                {contact.chain1} {" ↔ "} {contact.chain2}
               </li>
             ))}
           </ul>
