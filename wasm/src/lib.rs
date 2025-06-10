@@ -14,7 +14,9 @@ pub struct PDBErrorWrapper {
 }
 
 #[wasm_bindgen]
-pub struct PdbHandlerApi {}
+pub struct PdbHandlerApi {
+    structure: pdbtbx::PDB,
+}
 
 #[derive(Debug, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
@@ -34,71 +36,50 @@ pub struct ChainData {
 #[allow(clippy::new_without_default)]
 impl PdbHandlerApi {
     #[wasm_bindgen(constructor)]
-    pub fn new() -> Self {
-        PdbHandlerApi {}
+    pub fn new(bytes: &js_sys::Uint8Array) -> Result<PdbHandlerApi, PDBErrorWrapper> {
+        let structure = load_pdb_from_bytes(bytes)?;
+        Ok(PdbHandlerApi { structure })
     }
 
-    pub fn list_chains(&self, bytes: &js_sys::Uint8Array) -> Result<Vec<String>, PDBErrorWrapper> {
-        let structure = load_pdb_from_bytes(bytes)?;
-        let chains = pdb_handler::identify_chains(&structure);
-        Ok(chains)
+    pub fn list_chains(&self) -> Vec<String> {
+        pdb_handler::identify_chains(&self.structure)
     }
 
-    pub fn chains_in_contact(
-        &self,
-        bytes: &js_sys::Uint8Array,
-    ) -> Result<Vec<ChainContact>, PDBErrorWrapper> {
-        let structure = load_pdb_from_bytes(bytes)?;
-        let contacts = pdb_handler::chains_in_contact(&structure)
+    pub fn chains_in_contact(&self) -> Vec<ChainContact> {
+        pdb_handler::chains_in_contact(&self.structure)
             .into_iter()
             .map(|(chain1, chain2)| ChainContact { chain1, chain2 })
-            .collect();
-        Ok(contacts)
+            .collect()
     }
 
-    pub fn list_residues(
-        &self,
-        bytes: &js_sys::Uint8Array,
-    ) -> Result<Vec<ChainData>, PDBErrorWrapper> {
-        let structure = load_pdb_from_bytes(bytes)?;
-        let residues = pdb_handler::identify_residue_numbers(&structure)
+    pub fn list_residues(&self) -> Vec<ChainData> {
+        pdb_handler::identify_residue_numbers(&self.structure)
             .into_iter()
             .map(|(c, res)| ChainData {
                 chain: c,
                 items: res,
             })
-            .collect();
-        Ok(residues)
+            .collect()
     }
 
-    pub fn guess_moltype(
-        &self,
-        bytes: &js_sys::Uint8Array,
-    ) -> Result<Vec<ChainData>, PDBErrorWrapper> {
-        let structure = load_pdb_from_bytes(bytes)?;
-        let mol_types = pdb_handler::identify_molecular_types(&structure)
+    pub fn guess_moltype(&self) -> Vec<ChainData> {
+        pdb_handler::identify_molecular_types(&self.structure)
             .into_iter()
             .map(|(c, v)| ChainData {
                 chain: c,
                 items: v.into_iter().map(String::from).collect(),
             })
-            .collect();
-        Ok(mol_types)
+            .collect()
     }
 
-    pub fn list_unknown_residues(
-        &self,
-        bytes: js_sys::Uint8Array,
-    ) -> Result<Vec<ChainData>, PDBErrorWrapper> {
-        let structure = load_pdb_from_bytes(&bytes)?;
-        let unknown_res_map = pdb_handler::identify_unknowns(&structure)
+    pub fn list_unknown_residues(&self) -> Vec<ChainData> {
+        pdb_handler::identify_unknowns(&self.structure)
             .into_iter()
             .map(|(chain, residues)| ChainData {
                 chain,
                 items: residues,
             })
-            .collect();
-        Ok(unknown_res_map)
+            .collect()
     }
 }
 
